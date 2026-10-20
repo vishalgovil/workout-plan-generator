@@ -1,0 +1,153 @@
+# Workout Plan Generator
+
+A single-page Streamlit app that turns a few structured inputs about a person's fitness goals into a personalized weekly workout plan, using an LLM through the Groq API.
+
+Built as the Session 2 assignment of the AI Engineering Cohort. The focus of the assignment is **prompt design**: giving the model enough context to produce a plan a real person could follow, and making it respect the person's constraints.
+
+
+
+## Features
+
+- **Structured inputs** instead of one text box:
+  - Fitness goal (Build Muscle, Lose fat, Endurance, General fitness)
+  - Experience level (Beginner, Intermediate, Advanced)
+  - Workout days per week (1 to 7)
+  - Equipment access (No equipment, Home dumbbells, Full gym)
+  - Optional injuries or limitations (free text, up to 500 characters)
+- **Generate button** with a loading spinner, and the plan rendered as formatted Markdown (one section per day, with a table of exercises, sets, reps and rest).
+- **Download** the plan as a `.md` file.
+- **Friendly error messages** instead of crashes (see [Error handling](#error-handling)).
+
+## Tech stack
+
+- Python (type hints, `try/except`)
+- [Streamlit](https://streamlit.io/) for the UI
+- [Groq](https://groq.com/) for the LLM call (model: `openai/gpt-oss-20b`)
+- `python-dotenv` for loading the API key from a `.env` file
+
+## Project structure
+
+```
+.
+├── app.py             # Streamlit UI: inputs, button, display, download
+├── workout.py         # Validation, prompts, Groq call, error handling
+├── requirements.txt
+├── .env.example       # Template for your API key (copy to .env)
+├── .gitignore
+└── README.md
+```
+
+## Setup
+
+1. **Clone the repo and enter the folder**
+
+   ```bash
+   git clone <your-repo-url>
+   cd <your-repo-folder>
+   ```
+
+2. **Create and activate a virtual environment**
+
+   Windows:
+
+   ```bash
+   python -m venv .venv
+   .venv\Scripts\activate
+   ```
+
+   macOS / Linux:
+
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
+
+3. **Install dependencies**
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Add your Groq API key**
+
+   Create a free key in the [Groq console](https://console.groq.com/), copy `.env.example` to `.env`, and put your key in it:
+
+   ```
+   GROQ_API_KEY=your_key_here
+   ```
+
+   `.env` is listed in `.gitignore`, so it is never committed. Never commit a real key.
+
+5. **Run the app**
+
+   ```bash
+   streamlit run app.py
+   ```
+
+## How it works
+
+1. `app.py` collects the inputs and calls `generate_workout_plan(...)` when the button is clicked.
+2. `workout.py` validates the inputs, builds a **system prompt** (fixed rules and output format) and a **user prompt** (only the person's profile), calls Groq, and returns the plan text.
+3. `app.py` shows the plan, or a friendly error message if anything went wrong.
+
+## Prompt design
+
+The prompt is split in two on purpose:
+
+- **System prompt** holds the rules and the output format:
+  - Exactly the requested number of workout days.
+  - Only exercises that can be done with the chosen equipment.
+  - Avoid exercises that could aggravate stated injuries or limitations; when unsure, recommend professional guidance instead of guessing.
+  - No diagnoses or rehabilitation advice.
+  - Warm-up, cool-down, rest, and gradual progression guidance.
+  - What to do on non-workout days (rest or light activity).
+  - A fixed layout: a short overview, one `## Day N` section per workout day with a Markdown table (Exercise | Sets | Reps or Duration | Rest), then a `## Recovery and Progression` section.
+  - A short "not medical advice" line, added **only** when the person entered limitations.
+- **User prompt** holds only the profile data. The free-text limitations field is wrapped in `<limitations>` tags and marked as untrusted data.
+
+### Handling untrusted input
+
+The limitations box is free text that ends up inside a prompt, so it is treated as untrusted:
+
+- It is limited to 500 characters.
+- The system prompt tells the model to treat it strictly as data, never as instructions, and to ignore any attempt to change its role or rules.
+
+This reduces prompt-injection risk but does not eliminate it.
+
+|
+
+### Test cases
+
+<!-- TODO: run each case, fill in the Result column, and adjust the prompt if needed. Delete this section if you did not run the tests. -->
+
+| # | Inputs | What to check | Result |
+|---|---|---|---|
+| 1 | Beginner, 3 days, no equipment, "bad knees" | No jumping lunges or deep squats; disclaimer present | TODO |
+| 2 | Advanced, 7 days, full gym | Recovery is still included | TODO |
+| 3 | Any profile, 1 day per week | Exactly 1 workout day | TODO |
+| 4 | Limitations: "no overhead pressing" | No overhead press movements | TODO |
+| 5 | Empty limitations | No disclaimer line added | TODO |
+
+## Error handling
+
+All errors are shown in the app as friendly messages, not tracebacks.
+
+| Situation | Behavior |
+|---|---|
+| Invalid inputs (days out of range, empty fields, limitations over 500 characters) | Validation message, no API call is made |
+| Missing `GROQ_API_KEY` | Message asking for the key to be set |
+| Bad API key, rate limit, connection problem, other API error | Specific message for each case |
+| Empty response from the model | Fallback message asking the user to try again |
+| Anything unexpected | Generic fallback message |
+
+## Limitations
+
+- The plan is generated by an LLM and may occasionally ignore a constraint. Always review it before following it.
+- This is general fitness information, **not medical advice**. If you have an injury or health condition, consult a qualified professional first.
+
+## Possible improvements
+
+- Keep the last plan in `st.session_state` so it persists across reruns.
+- Check that the number of `## Day` sections matches the requested days, and retry once if not.
+- A "Regenerate" button for a different variation.
+- A "Swap this exercise" feature.
