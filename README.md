@@ -116,17 +116,6 @@ This reduces prompt-injection risk but does not eliminate it.
 
 |
 
-### Test cases
-
-<!-- TODO: run each case, fill in the Result column, and adjust the prompt if needed. Delete this section if you did not run the tests. -->
-
-| # | Inputs | What to check | Result |
-|---|---|---|---|
-| 1 | Beginner, 3 days, no equipment, "bad knees" | No jumping lunges or deep squats; disclaimer present | TODO |
-| 2 | Advanced, 7 days, full gym | Recovery is still included | TODO |
-| 3 | Any profile, 1 day per week | Exactly 1 workout day | TODO |
-| 4 | Limitations: "no overhead pressing" | No overhead press movements | TODO |
-| 5 | Empty limitations | No disclaimer line added | TODO |
 
 ## Error handling
 
